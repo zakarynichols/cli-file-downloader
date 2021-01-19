@@ -9,7 +9,6 @@ import (
 	"time"
 )
 
-// Create a download struct
 type Download struct {
 	Url           string
 	TargetPath    string
@@ -32,13 +31,13 @@ func main() {
 
 func (d Download) Do() error {
 	fmt.Println("Checking URL...")
-	// Create new request
+	// Create new HTTP request
 	r, err := d.getNewRequest("HEAD")
 	if err != nil {
 		return err
 	}
 
-	// HTTP request
+	// Make the HTTP request
 	resp, err := http.DefaultClient.Do(r)
 	if err != nil {
 		return err
@@ -67,7 +66,7 @@ func (d Download) Do() error {
 }
 
 func (d Download) getNewRequest(method string) (*http.Request, error) {
-	// Create a new request
+	// Create a new HTTP request
 	r, err := http.NewRequest(
 		method,
 		d.Url,
@@ -77,7 +76,7 @@ func (d Download) getNewRequest(method string) (*http.Request, error) {
 	if err != nil {
 		return nil, err
 	}
-	// Set headers
+	// Set HTTP headers
 	r.Header.Set("User-Agent", "File Downloader")
 
 	return r, nil
