@@ -3,8 +3,10 @@ package main
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"sync"
 	"time"
@@ -122,5 +124,21 @@ func (d Download) downloadChunk(i int, c [2]int) error {
 	// Set the Range Headers to our chunks of bytes
 	// that we'll pass in our goroutine
 	r.Header.Set("Range", fmt.Sprintf("bytes=%v-%v", c[0], c[1]))
+	resp, err := http.DefaultClient.Do(r)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode > 299 {
+		return errors.New(fmt.Sprintf("Response failed. Status code is: %v", resp.StatusCode))
+	}
+	fmt.Printf("Downloaded %v bytes for chunk %v\n", resp.Header.Get("Content-Length"), i)
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	err = ioutil.WriteFile(fmt.Sprintf("section-%v.tmp", i), b, os.ModePerm)
+	if err != nil {
+		return err
+	}
 	return nil
 }
