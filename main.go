@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -92,5 +93,34 @@ func (d Download) Do() error {
 
 	fmt.Printf("chunks %v", chunks)
 
+	var wg sync.WaitGroup
+
+	for i, s := range chunks {
+		wg.Add(1)
+		go func(i int, s [2]int) {
+			defer wg.Done()
+			err := d.downloadChunk(i, s)
+			if err != nil {
+				panic(err)
+			}
+		}(i, s)
+	}
+	wg.Wait()
+
+	return nil
+}
+
+func (d Download) downloadChunk(i int, c [2]int) error {
+	r, err := http.NewRequest(
+		"GET",
+		d.Url,
+		nil,
+	)
+	if err != nil {
+		return err
+	}
+	// Set the Range Headers to our chunks of bytes
+	// that we'll pass in our goroutine
+	r.Header.Set("Range", fmt.Sprintf("bytes=%v-%v", c[0], c[1]))
 	return nil
 }
