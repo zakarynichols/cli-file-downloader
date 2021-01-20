@@ -69,7 +69,6 @@ func (d Download) Do() error {
 	if err != nil {
 		return err
 	}
-
 	var chunks = make([][2]int, d.Chunks)
 	eachSize := size / d.Chunks
 
@@ -96,7 +95,6 @@ func (d Download) Do() error {
 	fmt.Printf("chunks %v", chunks)
 
 	var wg sync.WaitGroup
-
 	for i, s := range chunks {
 		wg.Add(1)
 		go func(i int, s [2]int) {
@@ -108,8 +106,7 @@ func (d Download) Do() error {
 		}(i, s)
 	}
 	wg.Wait()
-
-	return nil
+	return d.mergeFiles(chunks)
 }
 
 func (d Download) downloadChunk(i int, c [2]int) error {
@@ -136,9 +133,34 @@ func (d Download) downloadChunk(i int, c [2]int) error {
 	if err != nil {
 		return err
 	}
-	err = ioutil.WriteFile(fmt.Sprintf("section-%v.tmp", i), b, os.ModePerm)
+	err = ioutil.WriteFile(fmt.Sprintf("chunk-%v.tmp", i), b, os.ModePerm)
 	if err != nil {
 		return err
+	}
+	return nil
+}
+
+func (d Download) mergeFiles(sections [][2]int) error {
+	f, err := os.OpenFile(d.TargetPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, os.ModePerm)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	for i := range sections {
+		tmpFileName := fmt.Sprintf("chunk-%v.tmp", i)
+		b, err := ioutil.ReadFile(tmpFileName)
+		if err != nil {
+			return err
+		}
+		n, err := f.Write(b)
+		if err != nil {
+			return err
+		}
+		err = os.Remove(tmpFileName)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("%v bytes merged\n", n)
 	}
 	return nil
 }
