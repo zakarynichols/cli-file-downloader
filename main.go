@@ -10,17 +10,17 @@ import (
 )
 
 type Download struct {
-	Url           string
-	TargetPath    string
-	TotalSections int
+	Url        string
+	TargetPath string
+	Chunks     int
 }
 
 func main() {
 	startTime := time.Now()
 	d := Download{
-		Url:           "https://unsplash.com/photos/-zqe55fIOq8/download",
-		TargetPath:    "bike.png",
-		TotalSections: 10,
+		Url:        "https://unsplash.com/photos/-zqe55fIOq8/download",
+		TargetPath: "bike.png",
+		Chunks:     10,
 	}
 	err := d.Do()
 	if err != nil {
@@ -67,30 +67,30 @@ func (d Download) Do() error {
 		return err
 	}
 
-	var sections = make([][2]int, d.TotalSections)
-	eachSize := size / d.TotalSections
+	var chunks = make([][2]int, d.Chunks)
+	eachSize := size / d.Chunks
 
-	for i := range sections {
+	for i := range chunks {
 		if i == 0 {
 			// set first byte to zero
-			sections[i][0] = 0
+			chunks[i][0] = 0
 		} else {
 			// set the first byte in the section to the last byte of the
 			// previous one + 1 to account for the increment
-			sections[i][0] = sections[i-1][1] + 1
+			chunks[i][0] = chunks[i-1][1] + 1
 		}
-		if i < d.TotalSections-1 {
+		if i < d.Chunks-1 {
 			// set the last bytes in the section equal to
 			// the first bytes
-			sections[i][1] = sections[i][0] + eachSize
+			chunks[i][1] = chunks[i][0] + eachSize
 		} else {
 			// set the last byte in the section equal to the
 			// total size
-			sections[i][1] = size
+			chunks[i][1] = size
 		}
 	}
 
-	fmt.Printf("sections %v", sections)
+	fmt.Printf("chunks %v", chunks)
 
 	return nil
 }
