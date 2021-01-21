@@ -25,17 +25,17 @@ func main() {
 		TargetPath: "bike.png",
 		Chunks:     10,
 	}
-	err := d.Do()
+	err := d.DownloadFile()
 	if err != nil {
 		log.Printf("An error occured while downloading the file: %s\n", err)
 	}
 	fmt.Printf("Download completed in %v seconds\n", time.Now().Sub(startTime).Seconds())
 }
 
-func (d Download) Do() error {
+func (d Download) DownloadFile() error {
 	fmt.Println("Checking URL...")
 	// Create new HTTP request
-	r, err := http.NewRequest(
+	req, err := http.NewRequest(
 		("HEAD"),
 		d.Url,
 		nil,
@@ -44,17 +44,24 @@ func (d Download) Do() error {
 		return err
 	}
 	// Set HTTP headers
-	r.Header.Set("User-Agent", "File Downloader")
+	req.Header.Set("User-Agent", "File Downloader")
+
+	// Create HTTP client
+	client := &http.Client{
+		Timeout: time.Second * 10,
+	}
 
 	// Make the HTTP request
-	resp, err := http.DefaultClient.Do(r)
+	resp, err := client.Do(req)
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 	fmt.Printf("Response Status Code: %v\n", resp.StatusCode)
 	if resp.StatusCode > 299 {
 		return errors.New(fmt.Sprintf("Can't process. Response is %v", resp.StatusCode))
 	}
+
 	// Log Headers
 	for name, values := range resp.Header {
 		fmt.Println("name:", name, "values:", values)
@@ -110,7 +117,7 @@ func (d Download) Do() error {
 }
 
 func (d Download) downloadChunk(i int, c [2]int) error {
-	r, err := http.NewRequest(
+	req, err := http.NewRequest(
 		"GET",
 		d.Url,
 		nil,
@@ -120,15 +127,23 @@ func (d Download) downloadChunk(i int, c [2]int) error {
 	}
 	// Set the Range Headers to our chunks of bytes
 	// that we'll pass in our goroutine
-	r.Header.Set("Range", fmt.Sprintf("bytes=%v-%v", c[0], c[1]))
-	resp, err := http.DefaultClient.Do(r)
+	req.Header.Set("Range", fmt.Sprintf("bytes=%v-%v", c[0], c[1]))
+
+	client := &http.Client{
+		Timeout: time.Second * 10,
+	}
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
+
 	if resp.StatusCode > 299 {
 		return errors.New(fmt.Sprintf("Response failed. Status code is: %v", resp.StatusCode))
 	}
 	fmt.Printf("Downloaded %v bytes for chunk %v\n", resp.Header.Get("Content-Length"), i)
+
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return err
