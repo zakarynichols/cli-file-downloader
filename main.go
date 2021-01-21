@@ -34,6 +34,7 @@ func main() {
 
 func (d Download) DownloadFile() error {
 	fmt.Println("Checking URL...")
+
 	// Create new HTTP request
 	req, err := http.NewRequest(
 		("HEAD"),
@@ -43,6 +44,7 @@ func (d Download) DownloadFile() error {
 	if err != nil {
 		return err
 	}
+
 	// Set HTTP headers
 	req.Header.Set("User-Agent", "File Downloader")
 
@@ -57,7 +59,9 @@ func (d Download) DownloadFile() error {
 		return err
 	}
 	defer resp.Body.Close()
+
 	fmt.Printf("Response Status Code: %v\n", resp.StatusCode)
+
 	if resp.StatusCode > 299 {
 		return errors.New(fmt.Sprintf("Can't process. Response is %v", resp.StatusCode))
 	}
@@ -76,7 +80,7 @@ func (d Download) DownloadFile() error {
 	if err != nil {
 		return err
 	}
-	var chunks = make([][2]int, d.Chunks)
+	chunks := make([][2]int, d.Chunks)
 	eachSize := size / d.Chunks
 
 	for i := range chunks {
